@@ -33,7 +33,7 @@ def get_global_navigation(request: HttpRequest) -> List[MenuItem]:
             'label': _('My orders'),
             'url': reverse('eventyay_common:orders'),
             'active': 'orders' in url.url_name,
-            'icon': 'ticket',
+            'icon': 'shopping-cart',
         },
         {
             'label': _('My sessions'),
