@@ -146,7 +146,7 @@ $(function () {
       </div>
       <div class="profile-menu">
           <a href="${basePath}/${organizerName}/${eventSlug}/me/mails/" target="_self" class="btn btn-outline-success">
-              <i class="fa fa-envelope"></i> ${window.gettext('Speaker Emails')}
+              <i class="fa fa-envelope"></i> ${window.gettext('Speaker emails')}
           </a>
       </div>`
     );
