@@ -159,10 +159,6 @@
                                         <i class="fa fa-shopping-cart mr-2 mb-1"></i>
                                         {% translate "My orders" %}
                                     </a>
-                                    <a href="{% url 'eventyay_common:orders' %}?event={{ request.event.pk }}" class="dropdown-item" role="menuitem" tabindex="-1">
-                                        <i class="fa fa-ticket mr-2 mb-1"></i>
-                                        {% translate "My tickets" %}
-                                    </a>
                                     {% if request.event.talks_published %}
                                         {% user_has_submissions request.event as has_cfp_submissions %}
                                         {% if has_cfp_submissions %}
