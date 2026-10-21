@@ -296,6 +296,28 @@ def test_global_navigation_lists_plugin_items_before_organizers(rf):
 
 
 @pytest.mark.django_db
+def test_global_navigation_keeps_plugin_children_under_organizers(rf):
+    request = rf.get('/common/')
+    request.resolver_match = MagicMock(url_name='dashboard')
+    request.user = MagicMock(is_authenticated=True)
+    request.user.teams.exists.return_value = True
+    child = {
+        'label': 'Organizer tool',
+        'url': '/common/organizer-tool/',
+        'active': False,
+        'parent': reverse('eventyay_common:organizers'),
+    }
+
+    with patch('eventyay.eventyay_common.navigation.nav_global.send', return_value=[(None, [child])]):
+        nav = get_global_navigation(request)
+
+    organizers = nav[-1]
+    assert str(organizers['label']) == 'Organizers'
+    assert child in organizers['children']
+    assert all(item is not child for item in nav)
+
+
+@pytest.mark.django_db
 def test_event_kind_labels_event_series_and_meetup(event):
     assert _event_kind(event)['kind'] == 'event'
     assert _event_kind(event)['label'] == 'Event'
