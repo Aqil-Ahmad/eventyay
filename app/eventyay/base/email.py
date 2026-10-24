@@ -657,6 +657,10 @@ def event_public_url(event):
     )
 
 
+def event_day(event, value):
+    return LazyEventDate(value.astimezone(ZoneInfo(event.settings.timezone)))
+
+
 def shared_event_placeholders():
     """Event details offered with the same names and output in every email editor, whatever plugins are on."""
     return [
@@ -676,15 +680,15 @@ def shared_event_placeholders():
         SimpleFunctionalMailTextPlaceholder(
             'event_start_date',
             ['event'],
-            lambda event: LazyEventDate(event.date_from.astimezone(event.timezone)),
-            lambda event: LazyEventDate(event.date_from.astimezone(event.timezone)),
+            lambda event: event_day(event, event.date_from),
+            lambda event: event_day(event, event.date_from),
             _('The first day of the event'),
         ),
         SimpleFunctionalMailTextPlaceholder(
             'event_end_date',
             ['event'],
-            lambda event: LazyEventDate((event.date_to or event.date_from).astimezone(event.timezone)),
-            lambda event: LazyEventDate((event.date_to or event.date_from).astimezone(event.timezone)),
+            lambda event: event_day(event, event.date_to or event.date_from),
+            lambda event: event_day(event, event.date_to or event.date_from),
             _('The last day of the event'),
         ),
         SimpleFunctionalMailTextPlaceholder(
