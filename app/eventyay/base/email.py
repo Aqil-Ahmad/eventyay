@@ -661,6 +661,9 @@ def shared_event_placeholders():
     """Event details offered with the same names and output in every email editor, whatever plugins are on."""
     return [
         SimpleFunctionalMailTextPlaceholder(
+            'event_name', ['event'], lambda event: event.name, lambda event: event.name, _('The event’s name')
+        ),
+        SimpleFunctionalMailTextPlaceholder(
             'event_url', ['event'], event_public_url, event_public_url, _('Link to the public event page')
         ),
         SimpleFunctionalMailTextPlaceholder(
@@ -742,9 +745,7 @@ def base_placeholders(sender: Event, **kwargs):
         # `{event}` is the historical tickets placeholder; `{event_name}` is the
         # talk/Tiptap alias so both resolve to the event title in order emails.
         SimpleFunctionalMailTextPlaceholder('event', ['event'], lambda event: event.name, lambda event: event.name),
-        SimpleFunctionalMailTextPlaceholder(
-            'event_name', ['event'], lambda event: event.name, lambda event: event.name
-        ),
+        *shared_event_placeholders(),
         SimpleFunctionalMailTextPlaceholder(
             'event',
             ['event_or_subevent'],
@@ -760,7 +761,6 @@ def base_placeholders(sender: Event, **kwargs):
         SimpleFunctionalMailTextPlaceholder(
             'event_slug', ['event'], lambda event: event.slug, lambda event: event.slug
         ),
-        *shared_event_placeholders(),
         SimpleFunctionalMailTextPlaceholder('code', ['order'], lambda order: order.code, 'F8VVL'),
         SimpleFunctionalMailTextPlaceholder(
             'total',
