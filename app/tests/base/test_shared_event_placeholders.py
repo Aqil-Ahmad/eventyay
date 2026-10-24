@@ -10,6 +10,7 @@ from django_scopes import scopes_disabled
 from eventyay.base.email import get_available_placeholders, get_email_context
 from eventyay.base.models import Event, Organizer
 
+
 SHARED = (
     'event_name',
     'event_url',
