@@ -299,7 +299,7 @@ def build_email_preview_context(event, base_parameters: list[str]):
     # Get placeholders from talk module
     talk_placeholders = get_talk_placeholders(event, list(base_parameters))
         
-    all_placeholders = {**base_placeholders, **talk_placeholders}
+    all_placeholders = {**talk_placeholders, **base_placeholders}
 
     for key, placeholder in all_placeholders.items():
         sample = str(placeholder.render_sample(event))

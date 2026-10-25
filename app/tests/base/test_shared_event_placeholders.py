@@ -9,6 +9,7 @@ from django_scopes import scopes_disabled
 
 from eventyay.base.email import get_available_placeholders, get_email_context
 from eventyay.base.models import Event, Organizer
+from eventyay.base.templatetags.rich_text import build_email_preview_context
 
 
 SHARED = (
@@ -91,3 +92,10 @@ def test_missing_location_and_contact_email_render_empty(event):
 
     assert context['event_location'] == ''
     assert context['event_contact_email'] == ''
+
+
+@pytest.mark.django_db
+def test_sendmail_preview_shows_the_tickets_event_url(event):
+    preview = build_email_preview_context(event, ['event'])
+
+    assert '/fossasia-shared/summit/' in preview['event_url']
