@@ -7,29 +7,36 @@ from eventyay.helpers.placeholders import rename_placeholder
 FIELDS = {'TicketMailTemplate': ('subject', 'text'), 'EmailQueue': ('subject', 'message')}
 
 
-def renamed(value):
+def renamed(value, old, new):
     data = value.data if isinstance(value, LazyI18nString) else value
     if isinstance(data, dict):
-        return LazyI18nString(
-            {lang: rename_placeholder(text, 'organizer', 'organizer_name') for lang, text in data.items()}
-        )
+        return LazyI18nString({lang: rename_placeholder(text, old, new) for lang, text in data.items()})
     if isinstance(data, str):
-        return LazyI18nString(rename_placeholder(data, 'organizer', 'organizer_name'))
+        return LazyI18nString(rename_placeholder(data, old, new))
     return value
 
 
-def rename_organizer_placeholder(apps, schema_editor):
+def rename(apps, old, new):
     for model_name, fields in FIELDS.items():
         model = apps.get_model('sendmail', model_name)
         for row in model.objects.all().iterator():
             changed = []
             for field in fields:
                 value = getattr(row, field)
-                if value and '{organizer}' in str(value.data if isinstance(value, LazyI18nString) else value):
-                    setattr(row, field, renamed(value))
+                data = value.data if isinstance(value, LazyI18nString) else value
+                if data and old in str(data):
+                    setattr(row, field, renamed(value, old, new))
                     changed.append(field)
             if changed:
                 row.save(update_fields=changed)
+
+
+def forwards(apps, schema_editor):
+    rename(apps, 'organizer', 'organizer_name')
+
+
+def backwards(apps, schema_editor):
+    rename(apps, 'organizer_name', 'organizer')
 
 
 class Migration(migrations.Migration):
@@ -38,5 +45,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(rename_organizer_placeholder, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(forwards, reverse_code=backwards),
     ]
