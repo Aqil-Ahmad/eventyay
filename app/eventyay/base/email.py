@@ -713,14 +713,6 @@ def shared_event_placeholders():
             _('The organizer’s name'),
         ),
         SimpleFunctionalMailTextPlaceholder(
-            'organizer',
-            ['event'],
-            lambda event: event.organizer.name,
-            lambda event: event.organizer.name,
-            _('The organizer’s name'),
-            is_visible=False,
-        ),
-        SimpleFunctionalMailTextPlaceholder(
             'event_contact_email',
             ['event'],
             lambda event: event.settings.contact_mail or '',

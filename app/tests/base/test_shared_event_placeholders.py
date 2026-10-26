@@ -8,8 +8,9 @@ from django.utils.translation import override
 from django_scopes import scopes_disabled
 
 from eventyay.base.email import get_available_placeholders, get_email_context
-from eventyay.base.models import Event, Organizer
+from eventyay.base.models import Event, Organizer, Voucher
 from eventyay.base.templatetags.rich_text import build_email_preview_context
+from eventyay.helpers.placeholders import rename_placeholder
 
 
 SHARED = (
@@ -77,9 +78,8 @@ def test_event_dates_matches_the_event_page(event):
 
 
 @pytest.mark.django_db
-def test_old_organizer_placeholder_still_renders_but_is_hidden(event):
-    assert _context(event)['organizer'] == 'FOSSASIA'
-    assert get_available_placeholders(event, ['event'])['organizer'].is_visible is False
+def test_organizer_is_only_offered_as_organizer_name(event):
+    assert 'organizer' not in get_available_placeholders(event, ['event'])
 
 
 @pytest.mark.django_db
@@ -99,3 +99,30 @@ def test_sendmail_preview_shows_the_tickets_event_url(event):
     preview = build_email_preview_context(event, ['event'])
 
     assert '/fossasia-shared/summit/' in preview['event_url']
+
+
+@pytest.mark.django_db
+def test_voucher_placeholders_render_the_code_and_its_redeem_link(event):
+    with scopes_disabled():
+        voucher = Voucher.objects.create(event=event, code='A B&C')
+        context = get_email_context(event=event, voucher=voucher)
+
+    assert context['voucher_code'] == 'A B&C'
+    assert '/fossasia-shared/summit/redeem' in context['voucher_redeem_url']
+    assert context['voucher_redeem_url'].endswith('?voucher=A%20B%26C')
+
+
+def test_rename_placeholder_renames_braces_and_editor_chips():
+    html = '<p>{organizer} <span data-variable="organizer">{organizer}</span> {organizer_name}</p>'
+
+    assert rename_placeholder(html, 'organizer', 'organizer_name') == (
+        '<p>{organizer_name} <span data-variable="organizer_name">{organizer_name}</span> {organizer_name}</p>'
+    )
+
+
+def test_rename_placeholder_handles_json_escaped_chips():
+    stored = '{"en": "<span data-variable=\\"organizer\\">{organizer}</span>"}'
+
+    assert rename_placeholder(stored, 'organizer', 'organizer_name') == (
+        '{"en": "<span data-variable=\\"organizer_name\\">{organizer_name}</span>"}'
+    )
