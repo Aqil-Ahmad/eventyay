@@ -604,14 +604,21 @@ def get_combined_ticket_output_identifier(event: Event) -> str:
     return enabled_ids[0] if enabled_ids else 'pdf'
 
 
-def voucher_redemption_urls(event: Event, voucher_list: Sequence[str]) -> str:
-    """Clickable redemption links, one per voucher code."""
+def voucher_redeem_url(event: Event, code: str, subevent_id=None) -> str:
+    """Checkout link that applies this voucher code, on the voucher's date when it is limited to one."""
     from eventyay.multidomain.urlreverse import build_absolute_uri
 
+    url = f'{build_absolute_uri(event, "presale:event.redeem")}?voucher={quote(code)}'
+    if subevent_id:
+        url = f'{url}&subevent={subevent_id}'
+    return url
+
+
+def voucher_redemption_urls(event: Event, voucher_list: Sequence[str]) -> str:
+    """Clickable redemption links, one per voucher code."""
     links = []
     for code in voucher_list:
-        url = f'{build_absolute_uri(event, "presale:event.redeem")}?voucher={quote(code)}'
-        safe_url = escape(url)
+        safe_url = escape(voucher_redeem_url(event, code))
         links.append(f'<a href="{safe_url}">{safe_url}</a>')
     return '<br>'.join(links)
 
@@ -997,6 +1004,16 @@ def base_placeholders(sender: Event, **kwargs):
             ['waiting_list_entry'],
             lambda waiting_list_entry: waiting_list_entry.voucher.code,
             '68CYU2H6ZTP3WLK5',
+        ),
+        SimpleFunctionalMailTextPlaceholder(
+            'voucher_code', ['voucher'], lambda voucher: voucher.code, '68CYU2H6ZTP3WLK5', _('The voucher code')
+        ),
+        SimpleFunctionalMailTextPlaceholder(
+            'voucher_redeem_url',
+            ['event', 'voucher'],
+            lambda event, voucher: voucher_redeem_url(event, voucher.code, voucher.subevent_id),
+            lambda event: voucher_redeem_url(event, '68CYU2H6ZTP3WLK5'),
+            _('Link that applies the voucher at checkout'),
         ),
         SimpleFunctionalMailTextPlaceholder(
             'voucher_list',
