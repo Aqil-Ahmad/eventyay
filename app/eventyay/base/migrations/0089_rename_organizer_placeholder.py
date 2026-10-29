@@ -1,9 +1,17 @@
-from django.db import migrations
+import re
 
-from eventyay.helpers.placeholders import rename_placeholder
+from django.db import migrations
 
 
 STORES = ('GlobalSettingsObject_SettingsStore', 'Organizer_SettingsStore', 'Event_SettingsStore')
+
+
+def rename_placeholder(text, old, new):
+    """Rename ``{old}`` to ``{new}`` in a stored email text, including the editor's ``data-variable`` chips."""
+    if not text:
+        return text
+    text = text.replace(f'{{{old}}}', f'{{{new}}}')
+    return re.sub(rf'(data-variable=\\?["\']){re.escape(old)}(\\?["\'])', rf'\g<1>{new}\g<2>', text)
 
 
 def rename(apps, old, new):

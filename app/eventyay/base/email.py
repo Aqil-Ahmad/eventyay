@@ -701,8 +701,8 @@ def shared_event_placeholders():
         SimpleFunctionalMailTextPlaceholder(
             'event_location',
             ['event'],
-            lambda event: str(event.location) if event.location else '',
-            lambda event: str(event.location) if event.location else _('(no location set)'),
+            lambda event: event.location or '',
+            lambda event: event.location or '',
             _('The event’s venue or location'),
         ),
         SimpleFunctionalMailTextPlaceholder(
@@ -716,10 +716,14 @@ def shared_event_placeholders():
             'event_contact_email',
             ['event'],
             lambda event: event.settings.contact_mail or '',
-            lambda event: event.settings.contact_mail or 'info@example.com',
+            lambda event: event.settings.contact_mail or '',
             _('The event’s contact email address'),
         ),
     ]
+
+
+def shared_event_placeholder_names():
+    return {placeholder.identifier for placeholder in shared_event_placeholders()}
 
 
 @receiver(register_mail_placeholders, dispatch_uid='pretixbase_register_mail_placeholders')
