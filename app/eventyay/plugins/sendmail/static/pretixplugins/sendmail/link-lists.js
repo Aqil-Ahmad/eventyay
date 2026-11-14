@@ -62,21 +62,15 @@ const savedColumns = JSON.parse(document.querySelector('#link-list-columns')?.te
 let fileColumns = []
 let fileSample = {}
 
-const updatePreviewUrls = () => {
+const updatePreviewRequests = () => {
+    let extra = {}
+    if (fileColumns.length) {
+        extra = { link_list_sample: fileSample }
+    } else if (select?.value) {
+        extra = { link_list: select.value }
+    }
     document.querySelectorAll('[data-email-preview-wrapper]').forEach((wrapper) => {
-        if (!wrapper.dataset.basePreviewUrl) {
-            wrapper.dataset.basePreviewUrl = wrapper.dataset.emailPreviewUrl || ''
-        }
-        if (!wrapper.dataset.basePreviewUrl) {
-            return
-        }
-        const url = new URL(wrapper.dataset.basePreviewUrl, window.location.origin)
-        if (fileColumns.length) {
-            url.searchParams.set('link_list_sample', JSON.stringify(fileSample))
-        } else if (select?.value) {
-            url.searchParams.set('link_list', select.value)
-        }
-        wrapper.dataset.emailPreviewUrl = `${url.pathname}${url.search}`
+        wrapper.dataset.emailPreviewExtra = JSON.stringify(extra)
     })
 }
 
@@ -180,7 +174,7 @@ const showSelectedList = () => {
         panel.hidden = panel.dataset.linkListPanel !== selected
     })
     refreshEditorMenus()
-    updatePreviewUrls()
+    updatePreviewRequests()
 }
 
 const showFileColumns = async (input) => {
@@ -189,7 +183,7 @@ const showFileColumns = async (input) => {
     fileColumns = parsed.names
     fileSample = parsed.sample
     refreshEditorMenus()
-    updatePreviewUrls()
+    updatePreviewRequests()
 }
 
 const csrfToken = () => document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || ''
