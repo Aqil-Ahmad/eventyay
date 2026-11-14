@@ -1,6 +1,5 @@
 import datetime
 import json
-from urllib.parse import urlencode
 
 import pytest
 from django.core import mail as djmail
@@ -231,36 +230,57 @@ def test_lists_belong_to_their_event(logged_in_client, event):
     assert response.status_code == 404
 
 
+def _preview_html(client, event, payload):
+    url = f'/control/event/{event.organizer.slug}/{event.slug}/editor/email-preview'
+    return client.post(url, data=json.dumps(payload), content_type='application/json').json()['html']
+
+
 @pytest.mark.django_db
 def test_editor_preview_fills_in_a_row_of_the_chosen_list(logged_in_client, event, link_list):
-    url = f'/control/event/{event.organizer.slug}/{event.slug}/editor/email-preview'
-
-    saved = logged_in_client.post(
-        f'{url}?link_list={link_list.pk}',
-        data='{"html": "<p>{list_link}</p>"}',
-        content_type='application/json',
-    )
-    unsaved = logged_in_client.post(
-        f'{url}?{urlencode({"link_list_sample": json.dumps({"list_seat": "12A"})})}',
-        data='{"html": "<p>{list_seat}</p>"}',
-        content_type='application/json',
+    saved = _preview_html(logged_in_client, event, {'html': '<p>{list_link}</p>', 'link_list': link_list.pk})
+    unsaved = _preview_html(
+        logged_in_client, event, {'html': '<p>{list_seat}</p>', 'link_list_sample': {'list_seat': '12A'}}
     )
 
-    assert 'https://p.test/a' in saved.json()['html']
-    assert '12A' in unsaved.json()['html']
+    assert 'https://p.test/a' in saved
+    assert '12A' in unsaved
 
 
 @pytest.mark.django_db
 def test_editor_preview_escapes_list_values(logged_in_client, event):
-    url = f'/control/event/{event.organizer.slug}/{event.slug}/editor/email-preview'
-    sample = urlencode({'link_list_sample': json.dumps({'list_link': '<img src=x onerror=alert(1)>'})})
-
-    response = logged_in_client.post(
-        f'{url}?{sample}', data='{"html": "<p>{list_link}</p>"}', content_type='application/json'
+    html = _preview_html(
+        logged_in_client,
+        event,
+        {'html': '<p>{list_link}</p>', 'link_list_sample': {'list_link': '<img src=x onerror=alert(1)>'}},
     )
 
-    assert '<img' not in response.json()['html']
-    assert '&lt;img' in response.json()['html']
+    assert '<img' not in html
+    assert '&lt;img' in html
+
+
+@pytest.mark.django_db
+def test_editor_preview_drops_script_links_from_list_values(logged_in_client, event):
+    html = _preview_html(
+        logged_in_client,
+        event,
+        {'html': '<p><a href="{list_link}">Open</a></p>', 'link_list_sample': {'list_link': 'javascript:alert(1)'}},
+    )
+
+    assert 'javascript:' not in html
+    assert 'Open' in html
+
+
+@pytest.mark.django_db
+def test_rows_are_reserved_for_every_recipient_or_none(event, link_list):
+    with scopes_disabled():
+        too_many = link_list.reserve(['ali@example.com', 'sara@example.com', 'john@example.com'])
+        used_after_refusal = link_list.counts()['used']
+        enough = link_list.reserve(['ali@example.com', 'sara@example.com'])
+
+        assert not too_many
+        assert used_after_refusal == 0
+        assert enough
+        assert link_list.counts() == {'total': 2, 'used': 2, 'left': 0}
 
 
 @pytest.mark.django_db
