@@ -155,6 +155,18 @@ class MailLinkList(models.Model):
         left = self.rows.filter(assigned_email__isnull=True).count()
         return max(0, len(emails - already) - left)
 
+    def reserve(self, emails):
+        """Hand every address its row before any email goes out; False, with nothing handed out, if rows run short."""
+        emails = sorted({email.strip().lower() for email in emails if email and email.strip()})
+        with transaction.atomic():
+            if MailLinkList.objects.select_for_update().filter(pk=self.pk).only('pk').first() is None:
+                return False
+            if self.shortfall(emails):
+                return False
+            for email in emails:
+                self.assign(email)
+        return True
+
     def assign(self, email):
         """The row for this address, handing out the next unused one if it has none yet."""
         email = (email or '').strip().lower()
@@ -403,7 +415,8 @@ class EmailQueue(models.Model):
                 self.save(update_fields=['scheduled_at'])
             return False
 
-        if self.link_list_id and self.link_list.shortfall(self.get_recipient_emails()):
+        unsent_emails = recipients.filter(sent=False).values_list('email', flat=True)
+        if self.link_list_id and not self.link_list.reserve(unsent_emails):
             message = _('The link list "{name}" has too few unused rows for these recipients. Add rows and send again.')
             self.recipients.filter(sent=False).update(error=str(message.format(name=self.link_list.name)))
             if self.scheduled_at is not None:
