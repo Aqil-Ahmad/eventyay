@@ -269,7 +269,24 @@ def expand_email_preview_placeholders(
         context_dict = build_email_preview_context(event, list(base_parameters))
         context_dict.update({key: html.escape(str(value)) for key, value in (extra_context or {}).items()})
         expanded = escape_stray_braces(html_body).format_map(context_dict)
-        return expand_email_variable_chips(expanded, dict(context_dict))
+        expanded = expand_email_variable_chips(expanded, dict(context_dict))
+        return drop_unsafe_url_attributes(expanded) if extra_context else expanded
+
+
+UNSAFE_URL_SCHEMES = ('javascript:', 'vbscript:', 'data:')
+
+
+def drop_unsafe_url_attributes(html_body: str) -> str:
+    """Remove ``href`` and ``src`` values that would run script, e.g. after a filled-in value put one there."""
+    soup = BeautifulSoup(html_body, 'html.parser')
+    changed = False
+    for tag in soup.find_all(True):
+        for attribute in ('href', 'src'):
+            value = re.sub(r'[\s\x00-\x1f]+', '', tag.get(attribute) or '').lower()
+            if value.startswith(UNSAFE_URL_SCHEMES):
+                del tag[attribute]
+                changed = True
+    return str(soup) if changed else html_body
 
 
 def compile_email_body(source: str) -> str:
